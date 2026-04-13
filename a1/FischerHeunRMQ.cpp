@@ -152,31 +152,6 @@ size_t FischerHeunRMQ::rmq(size_t low, size_t high) const {
 #include <random>
 #include <algorithm>
 
-STUDENT_TEST("Works with 33-element array.") {
-    mt19937 generator(137); // Consistent random values
-    
-    /* Get a permutation of 0 ... 999. */
-    vector<RMQEntry> array(130);
-    for (size_t i = 0; i < array.size(); i++) {
-        array[i] = RMQEntry(i);
-    }
-    shuffle(array.begin(), array.end(), generator);
-    
-    /* Build an RMQ structure and a reference RMQ structure. */
-    FischerHeunRMQ rmq(array.data(), array.size());
-    SegmentTreeRMQ ref(array.data(), array.size());
-    
-    /* Do all possible RMQs. */
-    for (size_t i = 0; i < array.size(); i++) {
-        for (size_t j = i; j < array.size(); j++) {
-            cout << i << " " << j << endl;
-            size_t refans = ref.rmq(i, j);
-            size_t rmqans = rmq.rmq(i,j);
-            EXPECT_EQUAL(rmqans, refans);
-        }
-    }
-}
-
 PROVIDED_TEST("Works with a single-element array.") {
     vector<RMQEntry> array = { RMQEntry(137) };
     
@@ -214,6 +189,28 @@ PROVIDED_TEST("Works with 1,000-element array.") {
     
     /* Get a permutation of 0 ... 999. */
     vector<RMQEntry> array(1000);
+    for (size_t i = 0; i < array.size(); i++) {
+        array[i] = RMQEntry(i);
+    }
+    shuffle(array.begin(), array.end(), generator);
+    
+    /* Build an RMQ structure and a reference RMQ structure. */
+    FischerHeunRMQ rmq(array.data(), array.size());
+    SegmentTreeRMQ ref(array.data(), array.size());
+    
+    /* Do all possible RMQs. */
+    for (size_t i = 0; i < array.size(); i++) {
+        for (size_t j = i; j < array.size(); j++) {
+            EXPECT_EQUAL(rmq.rmq(i, j), ref.rmq(i, j));
+        }
+    }
+}
+
+STUDENT_TEST("Works with 10,000-element array.") {
+    mt19937 generator(137); // Consistent random values
+    
+    /* Get a permutation of 0 ... 999. */
+    vector<RMQEntry> array(5000);
     for (size_t i = 0; i < array.size(); i++) {
         array[i] = RMQEntry(i);
     }

@@ -4,7 +4,7 @@ CPP_FILES := $(filter-out $(TARGET_CPPS),$(shell find . -name '*.cpp' | sed "s|^
 HDR_FILES := $(shell find . -name '*.h')
 OBJ_FILES := $(CPP_FILES:.cpp=.o)
 
-CPP_FLAGS = --std=c++17 -Wall -Werror -Wpedantic -O0 -g
+CPP_FLAGS = --std=c++17 -Wall -Werror -Wpedantic -O0 -g -Ofast -march=native
 
 all: run-tests time-tests
 

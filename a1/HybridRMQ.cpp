@@ -142,3 +142,25 @@ PROVIDED_TEST("Works with 1,000-element array.") {
         }
     }
 }
+
+STUDENT_TEST("Works with 1,000-element array.") {
+    mt19937 generator(137); // Consistent random values
+    
+    /* Get a permutation of 0 ... 999. */
+    vector<RMQEntry> array(5000);
+    for (size_t i = 0; i < array.size(); i++) {
+        array[i] = RMQEntry(i);
+    }
+    shuffle(array.begin(), array.end(), generator);
+    
+    /* Build an RMQ structure and a reference RMQ structure. */
+    HybridRMQ rmq(array.data(), array.size());
+    SegmentTreeRMQ ref(array.data(), array.size());
+    
+    /* Do all possible RMQs. */
+    for (size_t i = 0; i < array.size(); i++) {
+        for (size_t j = i; j < array.size(); j++) {
+            EXPECT_EQUAL(rmq.rmq(i, j), ref.rmq(i, j));
+        }
+    }
+}
