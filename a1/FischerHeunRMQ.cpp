@@ -3,9 +3,38 @@
 #include <string.h>
 #include <iostream>
 using namespace std;
+#include <stack>
 
-int FischerHeunRMQ::computeCartesianNumber(size_t low, size_t high) {
-    
+size_t FischerHeunRMQ::computeCartesianNumber(size_t block) const {
+  stack<RMQEntry> s;
+
+  size_t blockStart = block * blockSize;
+  size_t blockEnd = min(numElems - 1, blockStart + blockSize - 1);
+
+  size_t num = 0;
+
+  for (size_t i = blockStart; i <= blockEnd; i++) {
+    if (s.empty()) {
+      s.push(elems[i]);
+      num = (num << 1) + 1;
+      continue;
+    } else {
+      while (!s.empty() && s.top() > elems[i]) {
+        s.pop();
+        num <<= 1;
+      }
+
+      s.push(elems[i]);
+      num = (num << 1) + 1;
+    }
+  }
+
+  while (!s.empty()) {
+    s.pop();
+    num <<= 1;
+  }
+
+  return num;
 }
 
 FischerHeunRMQ::FischerHeunRMQ(const RMQEntry* elems, size_t numElems) : elems(elems), numElems(numElems) {
@@ -73,15 +102,27 @@ size_t FischerHeunRMQ::rmq(size_t low, size_t high) const {
   size_t startBlock = low/blockSize;
   size_t leftStart = low;
   size_t leftEnd = min(high, (startBlock + 1) * blockSize - 1);
+  size_t startCartesianNumber = computeCartesianNumber(startBlock);
 
-  size_t minIdx = rmqs[startBlock]->rmq(leftStart % blockSize, leftEnd % blockSize);
+  if (rmqs[startCartesianNumber] == NULL) {
+    size_t startPos = blockSize * startBlock;
+    rmqs[startCartesianNumber] = new PrecomputedRMQ(elems + startPos, min(blockSize, numElems - startPos));
+  }
+
+  size_t minIdx = rmqs[startCartesianNumber]->rmq(leftStart % blockSize, leftEnd % blockSize) + blockSize * startBlock;
   RMQEntry minElem = elems[minIdx];
 
   size_t highBlock = high/blockSize;
-  size_t rightStart = max(high / blockSize * blockSize, low);
+  size_t rightStart = max(highBlock* blockSize, low);
   size_t rightEnd = high;
+  size_t highCartesianNumber = computeCartesianNumber(highBlock);
 
-  size_t rightIdx = rmqs[highBlock]->rmq(rightStart % blockSize, rightEnd % blockSize);
+  if (rmqs[highCartesianNumber] == NULL) {
+    size_t startPos = blockSize * highBlock;
+    rmqs[highCartesianNumber] = new PrecomputedRMQ(elems + startPos, min(blockSize, numElems - startPos));
+  }
+
+  size_t rightIdx = rmqs[highCartesianNumber]->rmq(rightStart % blockSize, rightEnd % blockSize) + blockSize * highBlock;
 
   if (elems[rightIdx] < minElem) {
     minElem = elems[rightIdx];
@@ -110,6 +151,31 @@ size_t FischerHeunRMQ::rmq(size_t low, size_t high) const {
 #include "SegmentTreeRMQ.h"
 #include <random>
 #include <algorithm>
+
+STUDENT_TEST("Works with 33-element array.") {
+    mt19937 generator(137); // Consistent random values
+    
+    /* Get a permutation of 0 ... 999. */
+    vector<RMQEntry> array(130);
+    for (size_t i = 0; i < array.size(); i++) {
+        array[i] = RMQEntry(i);
+    }
+    shuffle(array.begin(), array.end(), generator);
+    
+    /* Build an RMQ structure and a reference RMQ structure. */
+    FischerHeunRMQ rmq(array.data(), array.size());
+    SegmentTreeRMQ ref(array.data(), array.size());
+    
+    /* Do all possible RMQs. */
+    for (size_t i = 0; i < array.size(); i++) {
+        for (size_t j = i; j < array.size(); j++) {
+            cout << i << " " << j << endl;
+            size_t refans = ref.rmq(i, j);
+            size_t rmqans = rmq.rmq(i,j);
+            EXPECT_EQUAL(rmqans, refans);
+        }
+    }
+}
 
 PROVIDED_TEST("Works with a single-element array.") {
     vector<RMQEntry> array = { RMQEntry(137) };

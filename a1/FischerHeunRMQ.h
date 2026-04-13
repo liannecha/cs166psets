@@ -49,7 +49,7 @@ private:
   RMQEntry* summary;
   size_t numRMQs;
 
-  computeCartesianNumber(size_t low, size_t high);
+  size_t computeCartesianNumber(size_t block) const;
   
   /* Copying is disabled. */
   FischerHeunRMQ(const FischerHeunRMQ &) = delete;
