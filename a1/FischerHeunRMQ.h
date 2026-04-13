@@ -9,7 +9,11 @@
 #define FischerHeunRMQ_Included
 
 #include "RMQEntry.h"
+#include "PrecomputedRMQ.h"
+#include "SparseTableRMQ.h"
 #include <vector>
+
+using namespace std;
 
 class FischerHeunRMQ {
 public:
@@ -37,9 +41,15 @@ public:
   std::size_t rmq(std::size_t low, std::size_t high) const;
 
 private:
-  /* TODO: Edit this type to implement it however you'd like. Then, delete this
-   * comment.
-   */
+  PrecomputedRMQ** rmqs;
+  const RMQEntry* elems;
+  size_t numElems;
+  SparseTableRMQ* summaryRMQ;
+  size_t blockSize;
+  RMQEntry* summary;
+  size_t numRMQs;
+
+  computeCartesianNumber(size_t low, size_t high);
   
   /* Copying is disabled. */
   FischerHeunRMQ(const FischerHeunRMQ &) = delete;

@@ -1,26 +1,106 @@
 #include "FischerHeunRMQ.h"
 #include "SimpleTest/SimpleTest.h"
+#include <string.h>
+#include <iostream>
 using namespace std;
 
-FischerHeunRMQ::FischerHeunRMQ(const RMQEntry* elems, size_t numElems) {
-  /* TODO: Delete this line, the lines after this one, and implement
-   * this function.
-   */
-  (void) elems;
-  (void) numElems;
+int FischerHeunRMQ::computeCartesianNumber(size_t low, size_t high) {
+    
+}
+
+FischerHeunRMQ::FischerHeunRMQ(const RMQEntry* elems, size_t numElems) : elems(elems), numElems(numElems) {
+    summaryRMQ = NULL;
+    summary = NULL;
+
+  blockSize = ceil(log2(numElems)) / 4;
+  numRMQs = pow(4, blockSize);
+  if (blockSize == 0) {
+    rmqs = new PrecomputedRMQ*[1];
+    rmqs[0] = new PrecomputedRMQ(elems, numElems);
+    return;
+  } else {
+    rmqs = new PrecomputedRMQ*[numRMQs];
+    memset(rmqs, 0, sizeof(PrecomputedRMQ*) * numRMQs);
+  }
+
+  summary = new RMQEntry[(numElems-1)/blockSize + 1];
+  
+  // iterate over blocks
+  for (size_t b = 0; b < (numElems-1)/blockSize + 1; b++) {
+    // iterate over entries within block
+    RMQEntry minElem = elems[b*blockSize];
+
+    for (size_t i = b*blockSize; i < min(b*blockSize + blockSize, numElems); i++) {
+        if (elems[i] < minElem) {
+            minElem = elems[i];
+        }
+    }
+
+    summary[b] = minElem;
+  }
+
+  summaryRMQ = new SparseTableRMQ(summary, (numElems-1)/blockSize + 1);
 }
 
 FischerHeunRMQ::~FischerHeunRMQ() {
-  /* TODO: Delete this comment and implement this function. */
+  delete summaryRMQ;
+  delete[] summary;
+
+  if (blockSize == 0) {
+    delete rmqs[0];
+  } else {
+    for (size_t i = 0; i < numRMQs; i++) {
+        delete rmqs[i];
+    }
+  }
+
+  delete[] rmqs;
 }
 
 size_t FischerHeunRMQ::rmq(size_t low, size_t high) const {
-  /* TODO: Delete this line, the lines after this one, and implement
-   * this function.
-   */
-  (void) low;
-  (void) high;
-  return 0;
+    if (blockSize == 0) {
+        return rmqs[0]->rmq(low, high);
+    }
+
+  // first block after the block low is in
+  int firstBlock = low == 0 ? 0 : (low - 1) / blockSize + 1;
+  // last block before the block high is in
+  int lastBlock = (high + 1) / blockSize - 1;
+
+  int summaryMinIdx = firstBlock <= lastBlock ? summaryRMQ->rmq(firstBlock, lastBlock) : -1;
+
+  // query edges
+  size_t startBlock = low/blockSize;
+  size_t leftStart = low;
+  size_t leftEnd = min(high, (startBlock + 1) * blockSize - 1);
+
+  size_t minIdx = rmqs[startBlock]->rmq(leftStart % blockSize, leftEnd % blockSize);
+  RMQEntry minElem = elems[minIdx];
+
+  size_t highBlock = high/blockSize;
+  size_t rightStart = max(high / blockSize * blockSize, low);
+  size_t rightEnd = high;
+
+  size_t rightIdx = rmqs[highBlock]->rmq(rightStart % blockSize, rightEnd % blockSize);
+
+  if (elems[rightIdx] < minElem) {
+    minElem = elems[rightIdx];
+    minIdx = rightIdx;
+  }
+
+  if (summaryMinIdx != -1 && summary[summaryMinIdx] < minElem) {
+    // do a naive scan across the block corresponding to the minimum block to find the position of the minimum element.
+    // overall time complexity remains the same.
+
+    for (size_t i = summaryMinIdx * blockSize; i < min(summaryMinIdx * blockSize + blockSize, numElems); i++) {
+        if (elems[i] == summary[summaryMinIdx]) {
+            minIdx = i;
+            break;
+        }
+    }
+  }
+
+  return minIdx;
 }
 
 
