@@ -37,8 +37,9 @@ public:
   std::size_t rmq(std::size_t low, std::size_t high) const;
 
 private:
-  size_t** table;
-  size_t numElems;
+  std::vector<std::vector<std::size_t>> precomputed;
+  
+  /* Copying is disabled. */
   PrecomputedRMQ(const PrecomputedRMQ &) = delete;
   void operator= (PrecomputedRMQ) = delete;
 };

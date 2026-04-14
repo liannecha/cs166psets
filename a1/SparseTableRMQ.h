@@ -10,8 +10,6 @@
 #include "RMQEntry.h"
 #include <vector>
 
-using namespace std;
-
 class SparseTableRMQ {
 public:
   /* Constructs an RMQ structure from the specified array of elements. That
@@ -38,11 +36,10 @@ public:
   std::size_t rmq(std::size_t low, std::size_t high) const;
 
 private:
-  vector<vector<size_t>> table;
-  vector<size_t> logs;
-  size_t numElems;
   const RMQEntry* elems;
-
+  std::vector<std::vector<std::size_t>> sparse_table;
+  std::vector<std::size_t> log_table;
+  
   /* Copying is disabled. */
   SparseTableRMQ(const SparseTableRMQ &) = delete;
   void operator= (SparseTableRMQ) = delete;

@@ -2,45 +2,29 @@
 #include "SimpleTest/SimpleTest.h"
 using namespace std;
 
-PrecomputedRMQ::PrecomputedRMQ(const RMQEntry* elems, size_t numElems) : numElems(numElems) {
-    // init table
-    table = new size_t*[numElems];
+PrecomputedRMQ::PrecomputedRMQ(const RMQEntry* elems, size_t numElems) {
+   // Create the 2D vector of size numElems to hold the precomputed values.
+    precomputed.resize(numElems, vector<size_t>(numElems));
 
-    // to save 1/2 space we only allocate what we need
+    // Compute the minimum index for each range [i, j] and store it in precomputed[i][j].
     for (size_t i = 0; i < numElems; i++) {
-        table[i] = new size_t[numElems - i];
-    }
+        size_t minIndex = i;
+        precomputed[i][i] = i;
 
-    // i is left index of query
-    for (size_t i = 0; i < numElems; i++) {
-        // j is right index of query
-        for (size_t j = i; j < numElems; j++) {
-            RMQEntry minElem = elems[i];
-            size_t minIndex = i;
-
-            // linear scan for smallest elem
-            for (size_t k = i+1; k <= j; k++) {
-                if (elems[k] < minElem) {
-                    minElem = elems[k];
-                    minIndex = k;
-                }
+        for (size_t j = i + 1; j < numElems; j++) {
+            if (elems[j] < elems[minIndex]) {
+                minIndex = j;
             }
-
-            table[i][j-i] = minIndex;
+            precomputed[i][j] = minIndex;
         }
     }
 }
 
 PrecomputedRMQ::~PrecomputedRMQ() {
-  for (size_t i = 0; i < numElems; i++) {
-    delete[] table[i];
-  }
-
-  delete[] table;
 }
 
 size_t PrecomputedRMQ::rmq(size_t low, size_t high) const {
-  return table[low][high - low];
+    return precomputed[low][high];
 }
 
 

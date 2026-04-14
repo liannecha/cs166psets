@@ -2,50 +2,72 @@
 #include "SimpleTest/SimpleTest.h"
 using namespace std;
 
-SparseTableRMQ::SparseTableRMQ(const RMQEntry* elems, size_t numElems) : numElems(numElems), elems(elems) {
-    table = vector<vector<size_t>>(numElems);
-    logs = vector<size_t>(numElems+1);
+SparseTableRMQ::SparseTableRMQ(const RMQEntry* elems, size_t numElems) {
+    this->elems = elems;
+    if (numElems == 0) return;
 
-    // build logs table, logs[x] = floor(lg(x)). O(n) iterations, O(1) time per iter
+    // Build log table: [0, 0, 1, 1, 2, 2, ...]
+    log_table.resize(numElems + 1);
+    log_table[1] = 0;
     for (size_t i = 2; i <= numElems; i++) {
-        logs[i] = logs[i/2] + 1;
+        log_table[i] = log_table[i / 2] + 1;
     }
 
-    // build sparse table
-    // base case: lengths of 1.
+    // Build sparse table (dim=max_log+1 x numElems)
+    size_t max_log = log_table[numElems];
+    sparse_table.resize(max_log + 1);
+    
+    // Resize each row of the sparse table
+    for (size_t k = 0; k <= max_log; k++) {
+        size_t interval_length = 1 << k;
+        size_t num_intervals = numElems - interval_length + 1;
+        sparse_table[k].resize(num_intervals);
+    }
+
+    // Fill in first row of sparse table (intervals of length 1)
     for (size_t i = 0; i < numElems; i++) {
-        table[i].push_back(i);
+        sparse_table[0][i] = i;
     }
 
-    // k is log(len)
-    for (size_t k = 1; (size_t)(1 << k) <= numElems; k += 1) {
-        size_t len = 1 << k;
-        // i is the left index of the thing we are summarizing
-        for (size_t i = 0; i + len - 1 < numElems; i++) {
-            // dp step
-            size_t half = 1 << (k - 1);
-            size_t leftMin = table[i][k - 1];
-            size_t rightMin = table[i + half][k - 1];
+    // Fill in the rest of the sparse table
+    for (size_t k = 1; k <= max_log; k++) {
+        size_t half_interval_length = 1 << (k - 1);
+        size_t num_intervals = sparse_table[k].size();
 
-            size_t myMin = elems[leftMin] < elems[rightMin] ? leftMin : rightMin;
+        for (size_t i = 0; i < num_intervals; i++) {
+            // Get the indices of the two halves of the interval
+            size_t left_index = sparse_table[k - 1][i];
+            size_t right_index = sparse_table[k - 1][i + half_interval_length];
 
-            table[i].push_back(myMin);
+            // Compare the two halves and store the index of the minimum
+            if (elems[left_index] < elems[right_index]) {
+                sparse_table[k][i] = left_index;
+            } else {
+                sparse_table[k][i] = right_index;
+            }
         }
     }
 }
 
 SparseTableRMQ::~SparseTableRMQ() {
-
 }
 
 size_t SparseTableRMQ::rmq(size_t low, size_t high) const {
-    // find the k
-    size_t k = logs[high - low + 1];
-    size_t blockSize = 1 << k;
-    size_t leftMin = table[low][k];
-    size_t rightMin = table[high - blockSize + 1][k];
+    // Compute query range length and corresponding power of 2
+    size_t query_range = high - low + 1;
+    size_t k = log_table[query_range];
+    size_t interval_length = 1 << k;
 
-    return elems[leftMin] < elems[rightMin] ? leftMin : rightMin;
+    // Get the indices of the intervals covering the query range
+    size_t left_index = sparse_table[k][low];
+    size_t right_index = sparse_table[k][high - interval_length + 1];
+
+    // Return the index of the minimum value in the query range
+    if (elems[left_index] < elems[right_index]) {
+        return left_index;
+    } else {
+        return right_index;
+    }
 }
 
 /* Feel free to add additional test cases here. These are basic checks for correctness

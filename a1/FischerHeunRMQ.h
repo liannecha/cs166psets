@@ -7,9 +7,11 @@
 
 #ifndef FischerHeunRMQ_Included
 #define FischerHeunRMQ_Included
+#include "SparseTableRMQ.h"
 
 #include "RMQEntry.h"
 #include <vector>
+#include <unordered_map>
 
 class FischerHeunRMQ {
 public:
@@ -37,9 +39,23 @@ public:
   std::size_t rmq(std::size_t low, std::size_t high) const;
 
 private:
-  /* TODO: Edit this type to implement it however you'd like. Then, delete this
-   * comment.
-   */
+  const RMQEntry* elems;
+  size_t numElems;
+  size_t blockSize = 1;
+  size_t numBlocks;
+
+  // Array storing the index of the minimum element in each block.
+  std::vector<std::size_t> minimum_indices;
+
+  // Array storing the minimum value in each block.
+  RMQEntry* summary;
+  SparseTableRMQ* summaryRMQ;
+
+  // Array storing the Cartesian tree number for each block.
+  std::vector<size_t> block_types;
+
+  // Lookup table mapping tree numbers to RMQ solution for that tree number.
+  std::unordered_map<size_t, std::vector<std::size_t>> precomputed_tree_numbers;
   
   /* Copying is disabled. */
   FischerHeunRMQ(const FischerHeunRMQ &) = delete;

@@ -8,10 +8,7 @@
 #ifndef HybridRMQ_Included
 #define HybridRMQ_Included
 
-#include <bits/stdc++.h>
-
 #include "RMQEntry.h"
-#include "SparseTableRMQ.h"
 
 class HybridRMQ {
 public:
@@ -40,10 +37,14 @@ public:
 
 private:
   const RMQEntry* elems;
-  size_t numElems;
-  SparseTableRMQ* summaryRMQ;
-  size_t blockSize;
-  RMQEntry* summary;
+  std:size_t numElems;
+
+  SparseTableRMQ sparse_table;
+  std::vector<std::size_t> log_table;
+
+  std::size_t block_size;
+  std::vector<std::size_t> minimum_indexes;
+  std::vector<RMQEntry> minimums;
   
   /* Copying is disabled. */
   HybridRMQ(const HybridRMQ &) = delete;
