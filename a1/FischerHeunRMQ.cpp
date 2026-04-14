@@ -39,20 +39,25 @@ size_t FischerHeunRMQ::computeCartesianNumber(size_t block) const {
 }
 
 FischerHeunRMQ::FischerHeunRMQ(const RMQEntry* elems, size_t numElems) : elems(elems), numElems(numElems) {
-    summaryRMQ = NULL;
-    summary = NULL;
+  summaryRMQ = NULL;
+  summary = NULL;
 
+  // compute block size
   blockSize = ceil(log2(numElems)) / 4;
   numRMQs = pow(4, blockSize);
+
+  // if blocksize is 0, handle edge case by just using precomputed RMQ
   if (blockSize == 0) {
     rmqs = new PrecomputedRMQ*[1];
     rmqs[0] = new PrecomputedRMQ(elems, numElems);
     return;
   } else {
+    // otherwise, initialize array to empty
     rmqs = new PrecomputedRMQ*[numRMQs];
     memset(rmqs, 0, sizeof(PrecomputedRMQ*) * numRMQs);
   }
 
+  // initialize summary array
   summary = new RMQEntry[(numElems-1)/blockSize + 1];
   
   // iterate over blocks
@@ -60,6 +65,7 @@ FischerHeunRMQ::FischerHeunRMQ(const RMQEntry* elems, size_t numElems) : elems(e
     // iterate over entries within block
     RMQEntry minElem = elems[b*blockSize];
 
+    // fill in summary array
     for (size_t i = b*blockSize; i < min(b*blockSize + blockSize, numElems); i++) {
         if (elems[i] < minElem) {
             minElem = elems[i];
@@ -69,6 +75,7 @@ FischerHeunRMQ::FischerHeunRMQ(const RMQEntry* elems, size_t numElems) : elems(e
     summary[b] = minElem;
   }
 
+  // initialize summary rmq structure
   summaryRMQ = new SparseTableRMQ(summary, (numElems-1)/blockSize + 1);
 }
 
@@ -76,9 +83,11 @@ FischerHeunRMQ::~FischerHeunRMQ() {
   delete summaryRMQ;
   delete[] summary;
 
+  // if blocksize is 0, it's just one rmq
   if (blockSize == 0) {
     delete rmqs[0];
   } else {
+    // otherwise delete all the saved rmqs
     for (size_t i = 0; i < numRMQs; i++) {
         delete rmqs[i];
     }
@@ -105,11 +114,13 @@ size_t FischerHeunRMQ::rmq(size_t low, size_t high) const {
   size_t leftEnd = min(high, (startBlock + 1) * blockSize - 1);
   size_t startCartesianNumber = computeCartesianNumber(startBlock);
 
+  // if rmq is null (not initialized), initialize it
   if (rmqs[startCartesianNumber] == NULL) {
     size_t startPos = blockSize * startBlock;
     rmqs[startCartesianNumber] = new PrecomputedRMQ(elems + startPos, min(blockSize, numElems - startPos));
   }
 
+  // query it
   size_t minIdx = rmqs[startCartesianNumber]->rmq(leftStart % blockSize, leftEnd % blockSize) + blockSize * startBlock;
   RMQEntry minElem = elems[minIdx];
 
@@ -118,13 +129,16 @@ size_t FischerHeunRMQ::rmq(size_t low, size_t high) const {
   size_t rightEnd = high;
   size_t highCartesianNumber = computeCartesianNumber(highBlock);
 
+  // if rmq is null (not initialized), initialize it
   if (rmqs[highCartesianNumber] == NULL) {
     size_t startPos = blockSize * highBlock;
     rmqs[highCartesianNumber] = new PrecomputedRMQ(elems + startPos, min(blockSize, numElems - startPos));
   }
 
+  // query it
   size_t rightIdx = rmqs[highCartesianNumber]->rmq(rightStart % blockSize, rightEnd % blockSize) + blockSize * highBlock;
 
+  // take the minimum index
   if (elems[rightIdx] < minElem) {
     minElem = elems[rightIdx];
     minIdx = rightIdx;
