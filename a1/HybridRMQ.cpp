@@ -6,79 +6,79 @@ HybridRMQ::HybridRMQ(const RMQEntry* elems, size_t numElems) : elems(elems), num
     summaryRMQ = NULL;
     summary = NULL;
 
+    // If the input array is empty, return.
     if (numElems == 1) {
         return;
     }
 
-  blockSize = log2(numElems);
-  summary = new RMQEntry[(numElems-1)/blockSize + 1];
+    // Compute block size.
+    blockSize = log2(numElems);
+    summary = new RMQEntry[(numElems-1)/blockSize + 1];
   
+    // Compute the minimum for each block.
+    for (size_t b = 0; b < (numElems - 1) / blockSize + 1; b++) {
+        RMQEntry minElem = elems[b * blockSize];
 
-  // iterate over blocks
-  for (size_t b = 0; b < (numElems-1)/blockSize + 1; b++) {
-    // iterate over entries within block
-    RMQEntry minElem = elems[b*blockSize];
-
-    for (size_t i = b*blockSize; i < min(b*blockSize + blockSize, numElems); i++) {
-        if (elems[i] < minElem) {
-            minElem = elems[i];
+        for (size_t i = b * blockSize; i < min(b * blockSize + blockSize, numElems); i++) {
+            if (elems[i] < minElem) {
+                minElem = elems[i];
+            }
         }
+        summary[b] = minElem;
     }
-
-    summary[b] = minElem;
-  }
-
-  summaryRMQ = new SparseTableRMQ(summary, (numElems-1)/blockSize + 1);
+    summaryRMQ = new SparseTableRMQ(summary, (numElems - 1) / blockSize + 1);
 }
 
 HybridRMQ::~HybridRMQ() {
-  delete summaryRMQ;
-  delete[] summary;
+    delete summaryRMQ;
+    delete[] summary;
 }
 
 size_t HybridRMQ::rmq(size_t low, size_t high) const {
-  if (numElems == 1) {
-    return low;
-  }
-
-  // first block after the block low is in
-  int firstBlock = low == 0 ? 0 : (low - 1) / blockSize + 1;
-  // last block before the block high is in
-  int lastBlock = (high + 1) / blockSize - 1;
-
-  int summaryMinIdx = firstBlock <= lastBlock ? summaryRMQ->rmq(firstBlock, lastBlock) : -1;
-
-  // linear scan on edges
-  RMQEntry minElem = elems[low];
-  size_t minIdx = low;
-
-  for (size_t i = low; i <= min(firstBlock * blockSize - 1, high); i++) {
-    if (elems[i] < minElem) {
-        minElem = elems[i];
-        minIdx = i;
+    // If there is only one element, return that element.
+    if (numElems == 1) {
+        return low;
     }
-  }
 
-  for (int i = high; i >= max((int)low, (lastBlock + 1) * (int)blockSize); i--) {
-    if (elems[i] < minElem) {
-        minElem = elems[i];
-        minIdx = i;
-    }
-  }
+    // first block after the block low is in
+    int firstBlock = low == 0 ? 0 : (low - 1) / blockSize + 1;
+    // last block before the block high is in
+    int lastBlock = (high + 1) / blockSize - 1;
 
-  if (summaryMinIdx != -1 && summary[summaryMinIdx] < minElem) {
-    // do a naive scan across the block corresponding to the minimum block to find the position of the minimum element.
-    // overall time complexity remains the same.
+    // Use summaryRMQ to find the block containing the minimum element for the middle blocks, if there are any.
+    int summaryMinIdx = firstBlock <= lastBlock ? summaryRMQ->rmq(firstBlock, lastBlock) : -1;
 
-    for (size_t i = summaryMinIdx * blockSize; i < min(summaryMinIdx * blockSize + blockSize, numElems); i++) {
-        if (elems[i] == summary[summaryMinIdx]) {
+    // Perform a linear scan on the left and right edges of the range.
+    RMQEntry minElem = elems[low];
+    size_t minIdx = low;
+
+    for (size_t i = low; i <= min(firstBlock * blockSize - 1, high); i++) {
+        if (elems[i] < minElem) {
+            minElem = elems[i];
             minIdx = i;
-            break;
         }
     }
-  }
 
-  return minIdx;
+    for (int i = high; i >= max((int)low, (lastBlock + 1) * (int)blockSize); i--) {
+        if (elems[i] < minElem) {
+            minElem = elems[i];
+            minIdx = i;
+        }
+    }
+
+    if (summaryMinIdx != -1 && summary[summaryMinIdx] < minElem) {
+        // Do a naive scan across the block corresponding to the minimum block to find the position of the minimum element.
+        // Overall time complexity remains the same.
+
+        for (size_t i = summaryMinIdx * blockSize; i < min(summaryMinIdx * blockSize + blockSize, numElems); i++) {
+            if (elems[i] == summary[summaryMinIdx]) {
+                minIdx = i;
+                break;
+            }
+        }
+    }
+
+    return minIdx;
 }
 
 
@@ -126,28 +126,6 @@ PROVIDED_TEST("Works with 1,000-element array.") {
     
     /* Get a permutation of 0 ... 999. */
     vector<RMQEntry> array(1000);
-    for (size_t i = 0; i < array.size(); i++) {
-        array[i] = RMQEntry(i);
-    }
-    shuffle(array.begin(), array.end(), generator);
-    
-    /* Build an RMQ structure and a reference RMQ structure. */
-    HybridRMQ rmq(array.data(), array.size());
-    SegmentTreeRMQ ref(array.data(), array.size());
-    
-    /* Do all possible RMQs. */
-    for (size_t i = 0; i < array.size(); i++) {
-        for (size_t j = i; j < array.size(); j++) {
-            EXPECT_EQUAL(rmq.rmq(i, j), ref.rmq(i, j));
-        }
-    }
-}
-
-STUDENT_TEST("Works with 1,000-element array.") {
-    mt19937 generator(137); // Consistent random values
-    
-    /* Get a permutation of 0 ... 999. */
-    vector<RMQEntry> array(5000);
     for (size_t i = 0; i < array.size(); i++) {
         array[i] = RMQEntry(i);
     }

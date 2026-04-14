@@ -6,6 +6,7 @@ using namespace std;
 #include <stack>
 
 size_t FischerHeunRMQ::computeCartesianNumber(size_t block) const {
+  // simulate the stack
   stack<RMQEntry> s;
 
   size_t blockStart = block * blockSize;
