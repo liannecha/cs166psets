@@ -42,9 +42,12 @@ size_t SparseTableRMQ::rmq(size_t low, size_t high) const {
     // find the k
     size_t k = logs[high - low + 1];
     size_t blockSize = 1 << k;
+
+    // construct the queries
     size_t leftMin = table[low][k];
     size_t rightMin = table[high - blockSize + 1][k];
 
+    // return the min
     return elems[leftMin] < elems[rightMin] ? leftMin : rightMin;
 }
 
