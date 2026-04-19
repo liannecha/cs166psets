@@ -8,6 +8,9 @@
 
 #include "IntArray.h"
 
+using namespace std;
+#include <vector>
+
 class SuccinctRank {
 public:
     /* Constructs a succinct rank structure over an array of bits. The array
@@ -53,4 +56,5 @@ private:
 
     IntArray blockPrefixSums;
     IntArray miniBlockPrefixSums;
+    vector<IntArray> fourRussians;
 };

@@ -48,7 +48,19 @@ SuccinctRank::SuccinctRank(const void* bits, uint64_t numBits) : bits(bits), num
         }
     }
 
-    
+    // init the four russians table. the table is 2^b by b, with each entry needing to store integers up to log(miniBlockSize)
+    fourRussians = vector<IntArray>(1 << miniBlockSize, IntArray(BitCount(ceil(log2(miniBlockSize + 1))), miniBlockSize));
+    // fill the four russians table using dp
+    uint64_t topNumber = (1 << miniBlockSize) - 1;
+    for (uint64_t number = 0; number <= topNumber; number++) {
+        fourRussians[number][0] = 0;
+    }
+
+    for (uint64_t index = 1; index < miniBlockSize; index++) {
+        for (uint64_t number = 0; number <= topNumber; number++) {
+            fourRussians[number][index] = fourRussians[number][index-1] + ((number >> index) & 1);
+        }
+    }
 }
 
 uint64_t SuccinctRank::rank(std::uint64_t bitIndex) const {
