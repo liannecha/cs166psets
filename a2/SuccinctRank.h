@@ -43,4 +43,14 @@ private:
      * strategic use of the IntArray type. Once you've implemented this,
      * remove this TODO comment.
      */
+    const void* bits;
+    uint64_t minBits;   // cutoff for, if numbits is below this, we just do a O(n) scan to answer rank
+    uint64_t numBits;
+    uint64_t blockSize;
+    uint64_t miniBlockSize;
+    uint64_t numBlocks;
+    uint64_t numMiniInBlock;
+
+    IntArray blockPrefixSums;
+    IntArray miniBlockPrefixSums;
 };
