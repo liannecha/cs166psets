@@ -58,7 +58,7 @@ SuccinctRank::SuccinctRank(const void* bits, uint64_t numBits) : bits(bits), num
 
     for (uint64_t index = 1; index < miniBlockSize; index++) {
         for (uint64_t number = 0; number <= topNumber; number++) {
-            fourRussians[number][index] = fourRussians[number][index-1] + ((number >> index) & 1);
+            fourRussians[number][index] = fourRussians[number][index-1] + ((number >> (miniBlockSize - index)) & 1);
         }
     }
 }
@@ -83,8 +83,12 @@ uint64_t SuccinctRank::rank(std::uint64_t bitIndex) const {
     uint64_t localMiniBlock = (bitIndex % blockSize) / miniBlockSize;
     uint64_t miniBlock =  localMiniBlock + block * numMiniInBlock;
     bitCount += miniBlockPrefixSums[miniBlock];
-    for (uint64_t i = block * blockSize + localMiniBlock * miniBlockSize; i < bitIndex; i++) {
-        bitCount += bitAt(bits, i);
-    }
+
+    uint64_t num = integerAt(bits, block * blockSize + localMiniBlock * miniBlockSize, miniBlockSize);
+    uint64_t k = (bitIndex % blockSize) % miniBlockSize;
+    bitCount += fourRussians[num][k];
+    // for (uint64_t i = block * blockSize + localMiniBlock * miniBlockSize; i < bitIndex; i++) {
+    //     bitCount += bitAt(bits, i);
+    // }
     return bitCount;
 }
