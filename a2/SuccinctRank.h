@@ -42,19 +42,15 @@ public:
     
     
 private:
-    /* TODO: Implement this type however you see fit. We recommend making
-     * strategic use of the IntArray type. Once you've implemented this,
-     * remove this TODO comment.
-     */
-    const void* bits;
-    uint64_t minBits;   // cutoff for, if numbits is below this, we just do a O(n) scan to answer rank
-    uint64_t numBits;
-    uint64_t blockSize;
-    uint64_t miniBlockSize;
-    uint64_t numBlocks;
-    uint64_t numMiniInBlock;
+    const void* bits;       // original array
+    uint64_t minBits;       // cutoff for, if numbits is below this, we just do a O(n) scan to answer rank
+    uint64_t numBits;       // number of bits in the array
+    uint64_t blockSize;     // size of big blocks in bits
+    uint64_t miniBlockSize; // size of miniblocks in bits
+    uint64_t numBlocks;     // number of big blocks
+    uint64_t numMiniInBlock;    // number of miniblocks in a big big block
 
-    IntArray blockPrefixSums;
-    IntArray miniBlockPrefixSums;
-    vector<IntArray> fourRussians;
+    IntArray blockPrefixSums;       // prefix sums across big blocks
+    IntArray miniBlockPrefixSums;   // prefix sums across miniblocks
+    vector<IntArray> fourRussians;  // four russians table
 };

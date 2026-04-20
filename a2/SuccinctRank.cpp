@@ -18,7 +18,7 @@ SuccinctRank::SuccinctRank(const void* bits, uint64_t numBits) : bits(bits), num
     miniBlockSize = log2(numBits) / 2;
     numMiniInBlock = divideAndRoundUp(blockSize, miniBlockSize);
 
-    // compute prefix sums for top block
+    // compute prefix sums for big blocks
     // there can be at most numBits bits, so we need ceil(log2(numBits)) to properly store the prefix sums
     blockPrefixSums = IntArray(BitCount(ceil(log2(numBits + 1))), numBlocks + 1);
     uint64_t bitCount = 0;
@@ -38,7 +38,9 @@ SuccinctRank::SuccinctRank(const void* bits, uint64_t numBits) : bits(bits), num
     uint64_t miniBlock = 0;
     for (uint64_t block = 0; block < numBlocks; block++) {
         bitCount = 0;
+        // iterate over bits in the big block
         for (uint64_t i = block * blockSize; i < min(block * blockSize + blockSize, numBits); i++) {
+            // if the index is the beginning of a miniblock relative to the block it's in, store the prefix sum
             if ((i - block * blockSize) % miniBlockSize == 0) {
                 miniBlockPrefixSums[miniBlock] = bitCount;
                 miniBlock++;
@@ -51,11 +53,13 @@ SuccinctRank::SuccinctRank(const void* bits, uint64_t numBits) : bits(bits), num
     // init the four russians table. the table is 2^b by b, with each entry needing to store integers up to log(miniBlockSize)
     fourRussians = vector<IntArray>(1 << miniBlockSize, IntArray(BitCount(ceil(log2(miniBlockSize + 1))), miniBlockSize));
     // fill the four russians table using dp
+    // base case
     uint64_t topNumber = (1 << miniBlockSize) - 1;
     for (uint64_t number = 0; number <= topNumber; number++) {
         fourRussians[number][0] = 0;
     }
 
+    // dp step
     for (uint64_t index = 1; index < miniBlockSize; index++) {
         for (uint64_t number = 0; number <= topNumber; number++) {
             fourRussians[number][index] = fourRussians[number][index - 1] + ((number >> (index - 1)) & 1);
@@ -65,6 +69,7 @@ SuccinctRank::SuccinctRank(const void* bits, uint64_t numBits) : bits(bits), num
 
 uint64_t SuccinctRank::rank(std::uint64_t bitIndex) const {
     uint64_t bitCount = 0;
+    // if the number of bits is small, just do a linear scan
     if (numBits <= minBits) {
         for (uint64_t i = 0; i < bitIndex; i++) {
             bitCount += bitAt(bits, i);
@@ -78,12 +83,16 @@ uint64_t SuccinctRank::rank(std::uint64_t bitIndex) const {
         return blockPrefixSums[numBlocks];
     }
 
+    // get the block prefix sum and add
     uint64_t block = bitIndex / blockSize;
     bitCount += blockPrefixSums[block];
+
+    // get the mini block prefix sum and add
     uint64_t localMiniBlock = (bitIndex % blockSize) / miniBlockSize;
     uint64_t miniBlock =  localMiniBlock + block * numMiniInBlock;
     bitCount += miniBlockPrefixSums[miniBlock];
 
+    // query the four russians for the final few bits
     uint64_t num = integerAt(bits, block * blockSize + localMiniBlock * miniBlockSize, miniBlockSize);
     uint64_t k = (bitIndex % blockSize) % miniBlockSize;
     bitCount += fourRussians[num][k];
