@@ -93,7 +93,16 @@ uint64_t SuccinctRank::rank(std::uint64_t bitIndex) const {
     bitCount += miniBlockPrefixSums[miniBlock];
 
     // query the four russians for the final few bits
-    uint64_t num = integerAt(bits, block * blockSize + localMiniBlock * miniBlockSize, miniBlockSize);
+    uint64_t start = block * blockSize + localMiniBlock * miniBlockSize;
+
+    uint64_t bitsRemaining = numBits - start;
+    uint64_t num;
+    // do not read off the end.
+    if (bitsRemaining >= miniBlockSize) {
+        num = integerAt(bits, start, miniBlockSize);
+    } else {
+        num = integerAt(bits, start, bitsRemaining);
+    }
     uint64_t k = (bitIndex % blockSize) % miniBlockSize;
     bitCount += fourRussians[num][k];
     return bitCount;
