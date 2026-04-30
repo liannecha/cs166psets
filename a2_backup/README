@@ -1,5 +1,0 @@
-Implement the SuccinctRank type defined in SuccinctRank.h/.cpp.
-
-Use make to build everything.
-
-Run tests by running ./run-tests

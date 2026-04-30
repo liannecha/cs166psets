@@ -1,0 +1,17 @@
+Use make to build everything. Run tests by executing
+
+   ./run-tests
+   
+You can generate data showing the mean and variance of an estimator type
+of your choice by running
+
+   ./generate-csv [type] [p]
+   
+Here, [type] is the name of the estimator in question (e.g. NaiveHyperLogLog)
+and [p] the value of p used to choose m (m = 2^p). So, for exampe, to generate
+data from HyperLogLog using m = 32, you'd call
+
+   ./generate-csv HyperLogLog 5
+   
+This function outputs data to stdout; pipe or redirect it as appropriate to
+process the raw CSV data.

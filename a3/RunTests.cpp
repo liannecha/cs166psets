@@ -7,8 +7,6 @@
 using namespace std;
 
 const vector<string> kTestOrder = {
-    "RedBlackTree.cpp",
-    "RedBlackTreeTests.cpp"
 };
 
 namespace {
